@@ -24,6 +24,19 @@ A real-time mission control dashboard for AI assistants running on [Moltbot](htt
 - Automatic logging of completed tasks
 - Custom log entries for important events
 
+### 🧠 Context Tracking
+- **Real-time token usage** — Progress bar showing context window usage
+- **Color-coded warnings** — Green (ok), Yellow (50%+), Orange (75%+), Red (90%+ critical)
+- **Compaction counter** — Track how many times context has been compacted
+- **Model display** — Shows which AI model is active
+
+### 📦 Recent Artifacts
+- **Two-column artifact grid** — Visual cards for all created documents and files
+- **Type icons** — 📄 PDF, 📝 Document, 🖼️ Image, 💻 Code, 📎 Other
+- **Clickable links** — Opens artifacts directly in Google Drive or source
+- **Course badges** — Color-coded course labels (ITN 100, ITN 170, etc.)
+- **Descriptions** — Brief summary of each artifact
+
 ### 📝 Notes for AI
 - Leave quick notes/tasks for your AI to pick up on heartbeats
 - Persistent notepad that survives sessions
@@ -68,6 +81,11 @@ All endpoints support both session auth (browser) and API key auth (for AI/scrip
 | `/api/log` | POST | Add log entry |
 | `/api/notes` | GET | Get notes |
 | `/api/notes` | PUT | Update notes |
+| `/api/context` | GET | Get context/token status (public) |
+| `/api/context` | PUT | Update context status |
+| `/api/artifacts` | GET | List recent artifacts |
+| `/api/artifacts` | POST | Log a new artifact |
+| `/api/artifacts` | DELETE | Remove an artifact |
 
 ### Authentication
 
@@ -98,6 +116,35 @@ dashboard-task.sh done $TASK_ID
 # Add to action log
 dashboard-task.sh log "Action" "Optional details"
 ```
+
+### Context Tracking Script
+
+```bash
+# Update context status on dashboard
+update-context.sh <used_tokens> <max_tokens> <percentage> <compactions> [model]
+
+# Example:
+update-context.sh 128000 200000 64 4 "anthropic/claude-opus-4-5"
+```
+
+Warning levels are calculated automatically:
+- **ok** — Under 50%
+- **moderate** — 50-74%
+- **high** — 75-89%
+- **critical** — 90%+ (compaction imminent)
+
+### Artifact Logging Script
+
+```bash
+# Log a created artifact (PDF, document, image, etc.)
+dashboard-artifact.sh <title> <type> <url> [course] [description]
+
+# Examples:
+dashboard-artifact.sh "OSI Model Tutorial" "pdf" "https://drive.google.com/..." "ITN 100" "Tutorial + quiz"
+dashboard-artifact.sh "Architecture Diagram" "image" "https://..." "" "System overview"
+```
+
+Artifact types: `pdf`, `document`, `image`, `code`, `other`
 
 ### Workflow Integration
 
@@ -194,6 +241,32 @@ CREATE TABLE notes (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 INSERT INTO notes (id, content) VALUES (1, '');
+
+-- Context tracking table (single row)
+CREATE TABLE context (
+  id SERIAL PRIMARY KEY,
+  used_tokens INTEGER DEFAULT 0,
+  max_tokens INTEGER DEFAULT 200000,
+  percentage INTEGER DEFAULT 0,
+  compactions INTEGER DEFAULT 0,
+  model TEXT,
+  session_key TEXT,
+  warning_level VARCHAR(10) DEFAULT 'ok',
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+INSERT INTO context (id) VALUES (1);
+
+-- Artifacts table
+CREATE TABLE artifacts (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  artifact_type VARCHAR(20) DEFAULT 'document',
+  url TEXT,
+  drive_id TEXT,
+  course TEXT,
+  description TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
 ```
 
 ### Production Deployment with PM2

@@ -7,14 +7,14 @@ const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Public routes
-  if (pathname.startsWith('/login') || pathname.startsWith('/api/auth') || pathname.startsWith('/api/init') || pathname.startsWith('/api/status')) {
+  // Public routes (including context GET for dashboard display)
+  if (pathname.startsWith('/login') || pathname.startsWith('/api/auth') || pathname.startsWith('/api/init') || pathname.startsWith('/api/status') || pathname.startsWith('/api/context')) {
     return NextResponse.next();
   }
   
   // Allow internal API calls with x-api-key
   const apiKey = request.headers.get('x-api-key');
-  if (apiKey && (pathname.startsWith('/api/log') || pathname.startsWith('/api/tasks') || pathname.startsWith('/api/notes'))) {
+  if (apiKey && (pathname.startsWith('/api/log') || pathname.startsWith('/api/tasks') || pathname.startsWith('/api/notes') || pathname.startsWith('/api/artifacts'))) {
     return NextResponse.next();
   }
   

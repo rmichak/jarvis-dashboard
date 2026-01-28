@@ -18,10 +18,31 @@ interface Status {
   last_activity: string;
 }
 
+interface ContextStatus {
+  used_tokens: number;
+  max_tokens: number;
+  percentage: number;
+  compactions: number;
+  model: string | null;
+  warning_level: 'ok' | 'moderate' | 'high' | 'critical';
+  updated_at: string;
+}
+
 interface LogEntry {
   id: number;
   action: string;
   details?: string;
+  created_at: string;
+}
+
+interface Artifact {
+  id: number;
+  title: string;
+  artifact_type: 'pdf' | 'document' | 'image' | 'code' | 'other';
+  url: string | null;
+  drive_id: string | null;
+  course: string | null;
+  description: string | null;
   created_at: string;
 }
 
@@ -34,6 +55,16 @@ export default function Dashboard() {
   const [lastSync, setLastSync] = useState<Date>(new Date());
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
+  const [context, setContext] = useState<ContextStatus>({ 
+    used_tokens: 0, 
+    max_tokens: 200000, 
+    percentage: 0, 
+    compactions: 0, 
+    model: null, 
+    warning_level: 'ok',
+    updated_at: new Date().toISOString()
+  });
 
   const fetchData = useCallback(async () => {
     try {
@@ -65,6 +96,18 @@ export default function Dashboard() {
       if (notesRes.ok) {
         const data = await notesRes.json();
         setNotes(data.content || '');
+      }
+
+      // Fetch context status
+      const contextRes = await fetch('/api/context');
+      if (contextRes.ok) {
+        setContext(await contextRes.json());
+      }
+
+      // Fetch artifacts
+      const artifactsRes = await fetch('/api/artifacts?limit=10');
+      if (artifactsRes.ok) {
+        setArtifacts(await artifactsRes.json());
       }
 
       setLastSync(new Date());
@@ -185,6 +228,73 @@ export default function Dashboard() {
             <p className="text-xs text-[#94a3b8] mb-2">Last Activity</p>
             <p className="text-sm">{formatTime(status.last_activity)}</p>
           </div>
+
+          {/* Context Status Widget */}
+          <div className="mt-6 pt-6 border-t border-[#1e2a3a]">
+            <div className="flex items-center gap-2 mb-3">
+              <span>🧠</span>
+              <p className="text-xs text-[#94a3b8]">Context Status</p>
+            </div>
+            
+            {/* Progress Bar */}
+            <div className="mb-2">
+              <div className="flex justify-between text-xs mb-1">
+                <span className={`font-semibold ${
+                  context.warning_level === 'critical' ? 'text-red-400' :
+                  context.warning_level === 'high' ? 'text-orange-400' :
+                  context.warning_level === 'moderate' ? 'text-yellow-400' :
+                  'text-[#00d4ff]'
+                }`}>
+                  {context.percentage}%
+                </span>
+                <span className="text-[#94a3b8]">
+                  {Math.round(context.used_tokens / 1000)}k / {Math.round(context.max_tokens / 1000)}k
+                </span>
+              </div>
+              <div className="w-full bg-[#1e2a3a] rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full transition-all duration-500 ${
+                    context.warning_level === 'critical' ? 'bg-red-400' :
+                    context.warning_level === 'high' ? 'bg-orange-400' :
+                    context.warning_level === 'moderate' ? 'bg-yellow-400' :
+                    'bg-[#00d4ff]'
+                  }`}
+                  style={{ width: `${Math.min(context.percentage, 100)}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Warning Message */}
+            {context.warning_level !== 'ok' && (
+              <div className={`text-xs p-2 rounded mt-2 ${
+                context.warning_level === 'critical' ? 'bg-red-400/20 text-red-400' :
+                context.warning_level === 'high' ? 'bg-orange-400/20 text-orange-400' :
+                'bg-yellow-400/20 text-yellow-400'
+              }`}>
+                {context.warning_level === 'critical' && '⚠️ Context nearly full! Compaction imminent.'}
+                {context.warning_level === 'high' && '⚠️ Context at 75%+. Consider wrapping up.'}
+                {context.warning_level === 'moderate' && '📊 Context at 50%+.'}
+              </div>
+            )}
+
+            {/* Compactions Counter */}
+            <div className="flex justify-between text-xs mt-3">
+              <span className="text-[#94a3b8]">Compactions</span>
+              <span className={context.compactions > 0 ? 'text-amber-400' : 'text-[#94a3b8]'}>
+                {context.compactions}
+              </span>
+            </div>
+
+            {/* Model */}
+            {context.model && (
+              <div className="flex justify-between text-xs mt-1">
+                <span className="text-[#94a3b8]">Model</span>
+                <span className="text-[#00d4ff] truncate max-w-[120px]" title={context.model}>
+                  {context.model.split('/').pop()}
+                </span>
+              </div>
+            )}
+          </div>
         </aside>
 
         {/* Main Content */}
@@ -257,6 +367,54 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Recent Artifacts */}
+          <div className="bg-[#141d2b] border border-[#1e2a3a] rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <span>📦</span>
+              <h3 className="font-semibold text-white">Recent Artifacts</h3>
+              <span className="text-[#94a3b8] text-sm">({artifacts.length})</span>
+            </div>
+            {artifacts.length === 0 ? (
+              <p className="text-[#94a3b8] text-sm">No artifacts yet</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {artifacts.map(artifact => (
+                  <div key={artifact.id} className="bg-[#0a0f1a] border border-[#1e2a3a] rounded-lg p-3 hover:border-[#00d4ff] transition-colors">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="flex-shrink-0">
+                          {artifact.artifact_type === 'pdf' ? '📄' :
+                           artifact.artifact_type === 'document' ? '📝' :
+                           artifact.artifact_type === 'image' ? '🖼️' :
+                           artifact.artifact_type === 'code' ? '💻' : '📎'}
+                        </span>
+                        <div className="min-w-0">
+                          {artifact.url ? (
+                            <a href={artifact.url} target="_blank" rel="noopener noreferrer"
+                               className="text-sm font-medium text-[#00d4ff] hover:underline truncate block">
+                              {artifact.title}
+                            </a>
+                          ) : (
+                            <span className="text-sm font-medium text-white truncate block">{artifact.title}</span>
+                          )}
+                          <div className="flex items-center gap-2 mt-1">
+                            {artifact.course && (
+                              <span className="text-xs bg-[#1e2a3a] text-[#f59e0b] px-2 py-0.5 rounded">{artifact.course}</span>
+                            )}
+                            <span className="text-xs text-[#94a3b8]">{formatTime(artifact.created_at)}</span>
+                          </div>
+                          {artifact.description && (
+                            <p className="text-xs text-[#94a3b8] mt-1 line-clamp-1">{artifact.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Bottom Section */}
