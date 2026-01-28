@@ -371,10 +371,20 @@ export default function Dashboard() {
 
           {/* Recent Artifacts */}
           <div className="bg-[#141d2b] border border-[#1e2a3a] rounded-lg p-4 mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <span>📦</span>
-              <h3 className="font-semibold text-white">Recent Artifacts</h3>
-              <span className="text-[#94a3b8] text-sm">({artifacts.length})</span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span>📦</span>
+                <h3 className="font-semibold text-white">Recent Artifacts</h3>
+                <span className="text-[#94a3b8] text-sm">({artifacts.length})</span>
+              </div>
+              <a 
+                href="https://drive.google.com/drive/folders/1r_3xImurq5dK73NGvWyiyh1xQIs-XOeJ"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#00d4ff] border border-[#1e2a3a] rounded-lg hover:border-[#00d4ff] hover:bg-[#00d4ff]/10 transition-colors"
+              >
+                <span>📁</span> Google Drive
+              </a>
             </div>
             {artifacts.length === 0 ? (
               <p className="text-[#94a3b8] text-sm">No artifacts yet</p>
