@@ -1,6 +1,6 @@
 # Jarvis Dashboard
 
-A real-time mission control dashboard for AI assistants running on [Clawdbot](https://github.com/clawdbot/clawdbot). Track tasks, monitor activity, and communicate with your AI through a beautiful dark-themed interface.
+A real-time mission control dashboard for AI assistants running on [Moltbot](https://github.com/moltbot/moltbot). Track tasks, monitor activity, and communicate with your AI through a beautiful dark-themed interface.
 
 ![Status: Active](https://img.shields.io/badge/status-active-brightgreen)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
@@ -82,9 +82,9 @@ curl -X POST http://localhost:3000/api/status \
   -d '{"is_active": true, "current_task": "Working on something"}'
 ```
 
-## Integration with Clawdbot
+## Integration with Moltbot
 
-The dashboard is designed to integrate seamlessly with Clawdbot AI assistants. Use the helper script for easy task management:
+The dashboard is designed to integrate seamlessly with Moltbot AI assistants. Use the helper script for easy task management:
 
 ### Task Management Script
 
